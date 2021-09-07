@@ -9,9 +9,23 @@ const bot = new TelegramBot(token, {polling: true});
 let urlBalance = 'https://api.splinterlands.io/players/balances?'; //player balance
 let urlCard    = 'https://api.splinterlands.io/cards/collection/'; //player cards
 
+let count = 1;
+let tempUrl = urlBalance;
+let urlBalanceArr = [];
 accounts.forEach(function (item) {
-    urlBalance = urlBalance + 'username=' + item.name + '&';
+    if(count >= 20) {
+        urlBalanceArr.push(tempUrl);
+        tempUrl = urlBalance;
+        count = 1;
+    }
+
+    tempUrl += 'username=' + item.name + '&';
+    
+    count++;
 })
+if(accounts.length%20) {
+    urlBalanceArr.push(tempUrl)
+}
 
 
 bot.on('message', (msg) => {
@@ -26,8 +40,8 @@ bot.on('message', (msg) => {
     if(msg.text === '/all_balance') {
         getAllDEC().then(balance => {
             let message = '';
-            balance.forEach(function(item) {
-                message += item.name + ': ' + item.DEC.toFixed(2) + ' DEC \n';
+            balance.forEach(function(item, index) {
+                message += index+1 + ') ' + item.name + ':      ' + item.DEC.toFixed(2) + ' DEC \n';
             })
             bot.sendMessage(chatId, message);   
         })
@@ -59,31 +73,33 @@ bot.on('message', (msg) => {
 async function getSumDEC() {
     let sum = 0;
 
-    let balances = await axios.get(urlBalance);
-
-    balances.data.forEach(function(item) {
-        if(item.token === 'DEC') {
-            sum += item.balance;
-        }
-    })
-
+    for (const url of urlBalanceArr) {
+        let balances = await axios.get(url);
+        balances.data.forEach(function(item) {
+            if(item.token === 'DEC') {
+                sum += item.balance;
+            }
+        })
+    }
+    
     return sum;
 }
 
 async function getAllDEC() {
     let balance = [];
 
-    let balances = await axios.get(urlBalance);
-
-    balances.data.forEach(function(item) {
-        if(item.token === 'DEC') {
-            user = {
-                'name': item.player,
-                'DEC': item.balance
+    for (const url of urlBalanceArr) {
+        let balances = await axios.get(url);
+        balances.data.forEach(function(item) {
+            if(item.token === 'DEC') {
+                user = {
+                    'name': item.player,
+                    'DEC': item.balance
+                }
+                balance.push(user)
             }
-            balance.push(user)
-        }
-    })
+        })
+    }
 
     return balance;
 }
