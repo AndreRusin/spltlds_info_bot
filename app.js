@@ -6,10 +6,11 @@ require('dotenv').config()
 const token = process.env.TOKEN_BOT; //splinterlands_statistic_bot
 const bot = new TelegramBot(token, {polling: true});
 
-let url = 'https://api.splinterlands.io/players/balances?';
+let urlBalance = 'https://api.splinterlands.io/players/balances?'; //player balance
+let urlCard    = 'https://api.splinterlands.io/cards/collection/'; //player cards
 
 accounts.forEach(function (item) {
-    url = url + 'username=' + item.name + '&';
+    urlBalance = urlBalance + 'username=' + item.name + '&';
 })
 
 
@@ -18,16 +19,38 @@ bot.on('message', (msg) => {
 
     if(msg.text === '/sum_balance') {
         getSumDEC().then(sum => {
-            bot.sendMessage(chatId, 'Общий баланс: ' + sum + 'DEC');
+            bot.sendMessage(chatId, 'Общий баланс: ' + sum.toFixed(2) + ' DEC');
         })
     }
 
     if(msg.text === '/all_balance') {
         getAllDEC().then(balance => {
+            let message = '';
             balance.forEach(function(item) {
-                bot.sendMessage(chatId, item.name + ': ' + item.DEC + 'DEC');
-            })    
+                message += item.name + ': ' + item.DEC.toFixed(2) + ' DEC \n';
+            })
+            bot.sendMessage(chatId, message);   
         })
+    }
+
+
+    if(msg.text === '/cards') {
+        accounts.forEach(function (item) {
+            getPlayerCards(item.name).then(item => {
+                if (item.cards.length) {
+                    let message = item.player + ': ' + item.cards.length +' шт.\n'
+
+                    item.cards.forEach(function(card) {
+                        message += '------------------\n    золотая: ' 
+                        + card.gold  + ' \| ' + 'цена: ' 
+                        + card.buy_price + '\n------------------\n';
+                    })
+
+                    bot.sendMessage(chatId, message);
+                }
+                   
+            })
+        })   
     }
     
   });
@@ -36,7 +59,7 @@ bot.on('message', (msg) => {
 async function getSumDEC() {
     let sum = 0;
 
-    let balances = await axios.get(url);
+    let balances = await axios.get(urlBalance);
 
     balances.data.forEach(function(item) {
         if(item.token === 'DEC') {
@@ -50,7 +73,7 @@ async function getSumDEC() {
 async function getAllDEC() {
     let balance = [];
 
-    let balances = await axios.get(url);
+    let balances = await axios.get(urlBalance);
 
     balances.data.forEach(function(item) {
         if(item.token === 'DEC') {
@@ -63,4 +86,12 @@ async function getAllDEC() {
     })
 
     return balance;
+}
+
+async function getPlayerCards(playerName) {
+    let playerUrl = urlCard + playerName;
+
+    let cards = await axios.get(playerUrl);
+
+    return cards.data;
 }
