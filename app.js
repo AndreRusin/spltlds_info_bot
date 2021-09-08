@@ -13,7 +13,7 @@ let count = 1;
 let tempUrl = urlBalance;
 let urlBalanceArr = [];
 accounts.forEach(function (item) {
-    if(count >= 20) {
+    if(count >= 15) {
         urlBalanceArr.push(tempUrl);
         tempUrl = urlBalance;
         count = 1;
@@ -23,7 +23,7 @@ accounts.forEach(function (item) {
     
     count++;
 })
-if(accounts.length%20) {
+if(accounts.length%15) {
     urlBalanceArr.push(tempUrl)
 }
 
@@ -61,8 +61,7 @@ bot.on('message', (msg) => {
                     })
 
                     bot.sendMessage(chatId, message);
-                }
-                   
+                }  
             })
         })   
     }
