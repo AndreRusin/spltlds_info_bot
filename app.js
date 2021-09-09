@@ -8,24 +8,31 @@ const bot = new TelegramBot(token, {polling: true});
 
 let urlBalance = 'https://api.splinterlands.io/players/balances?'; //player balance
 let urlCard    = 'https://api.splinterlands.io/cards/collection/'; //player cards
+let urlQuest   = 'https://api.splinterlands.io/players/quests?username='; //player quest
 
-let count = 1;
-let tempUrl = urlBalance;
-let urlBalanceArr = [];
-accounts.forEach(function (item) {
-    if(count >= 15) {
+function createUrlsArray (url){
+    let count = 1;
+    let tempUrl = url;
+    let urlBalanceArr = [];
+    accounts.forEach(function (item) {
+        if(count >= 15) {
+            urlBalanceArr.push(tempUrl);
+            tempUrl = url;
+            count = 1;
+        }
+
+        tempUrl += 'username=' + item.name + '&';
+        
+        count++;
+    })
+    if(accounts.length%15) {
         urlBalanceArr.push(tempUrl);
-        tempUrl = urlBalance;
-        count = 1;
     }
 
-    tempUrl += 'username=' + item.name + '&';
-    
-    count++;
-})
-if(accounts.length%15) {
-    urlBalanceArr.push(tempUrl)
+    return urlBalanceArr;
 }
+
+let urlBalanceArr = createUrlsArray(urlBalance);
 
 
 bot.on('message', (msg) => {
@@ -33,7 +40,7 @@ bot.on('message', (msg) => {
 
     if(msg.text === '/sum_balance') {
         getSumDEC().then(sum => {
-            bot.sendMessage(chatId, 'Общий баланс: ' + sum.toFixed(2) + ' DEC');
+            bot.sendMessage(chatId, 'Общий баланс: ' + sum.toFixed(4) + ' DEC');
         })
     }
 
@@ -41,33 +48,25 @@ bot.on('message', (msg) => {
         getAllDEC().then(balance => {
             let message = '';
             balance.forEach(function(item, index) {
-                message += index+1 + ') ' + item.name + ':      ' + item.DEC.toFixed(2) + ' DEC \n';
+                message += index+1 + ') ' + item.name + ':      ' + item.DEC.toFixed(4) + ' DEC \n';
             })
             bot.sendMessage(chatId, message);   
         })
     }
 
-
     if(msg.text === '/cards') {
-        accounts.forEach(function (item) {
-            getPlayerCards(item.name).then(item => {
-                if (item.cards.length) {
-                    let message = item.player + ': ' + item.cards.length +' шт.\n'
+            getPlayerCards().then(message => {
+                bot.sendMessage(chatId, message);                 
+            })   
+    }
 
-                    item.cards.forEach(function(card) {
-                        message += '------------------\n    золотая: ' 
-                        + card.gold  + ' \| ' + 'цена: ' 
-                        + card.buy_price + '\n------------------\n';
-                    })
-
-                    bot.sendMessage(chatId, message);
-                }  
-            })
+    if(msg.text === '/quests') {
+        getActiveQuest().then(message => {
+            bot.sendMessage(chatId, message);
         })   
     }
     
   });
-
 
 async function getSumDEC() {
     let sum = 0;
@@ -104,9 +103,54 @@ async function getAllDEC() {
 }
 
 async function getPlayerCards(playerName) {
-    let playerUrl = urlCard + playerName;
+    let message = '';
+    let index = 1;
 
-    let cards = await axios.get(playerUrl);
+    for (const item of accounts) {
+        let playerUrl = urlCard + item.name;
+        let cards = await axios.get(playerUrl);
+        let index = 1;
 
-    return cards.data;
+        if (cards.data.cards.length) {
+            message += index + ')' + cards.data.player + ': ' 
+                        + cards.data.cards.length +' шт.\n'
+
+            cards.data.cards.forEach(function(card) {
+                message += '------------------\n    золотая: ' 
+                + card.gold  + ' \| ' + 'цена: ' 
+                + card.buy_price + '\n------------------\n';
+            })
+
+            index++;
+        }
+    }
+
+    if(message === '') {
+        return 'Нету ни одной карты(';
+    }
+    return message;
+}
+
+async function getActiveQuest() {
+    let message = '';
+    let index = 1;
+
+    for (const item of accounts) {
+        let playerUrl = urlQuest + item.name;
+        let cards = await axios.get(playerUrl);
+
+        if(cards.data[0].completed_items < 5)
+        {
+            message += index 
+                        + ')' 
+                        + cards.data[0].player 
+                        + ':     ' 
+                        + cards.data[0].completed_items 
+                        + '/' 
+                        + cards.data[0].total_items + '\n';
+            index++;
+        }
+    }
+
+    return message;
 }
