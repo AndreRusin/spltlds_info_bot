@@ -6,10 +6,10 @@
 ### 6)заполнить его акк-ми
 ### 7)в телеге найти botFather, там зарегать бота нового, получаете токен
 ### 8) добавить там же данные команды боту:
-  sum_balance - show sum balances
-  all_balance - show all balances
-  cards - show all cards
-  quest - show active quests
+  sum_balance - show sum balances  
+  all_balance - show all balances  
+  cards - show all cards  
+  quest - show active quests  
 ### 9)в папке с ботом переименовать файл .env.exemple в .env
 ### 10) в этот файл ввести токен бота который был получен на шаге 7
 ### 11) запустить бота командой: node app.js
