@@ -40,7 +40,13 @@ bot.on('message', (msg) => {
 
     if(msg.text === '/sum_balance') {
         getSumDEC().then(sum => {
-            bot.sendMessage(chatId, 'Общий баланс: ' + sum.toFixed(4) + ' DEC');
+            bot.sendMessage(chatId, 'Общий баланс: ' + sum.toFixed(3) + ' DEC');
+        })
+    }
+
+    if(msg.text === '/sum_balance_credits') {
+        getSumCredit().then(sum => {
+            bot.sendMessage(chatId, 'Общий баланс: ' + sum.toFixed(3) + ' CREDITS');
         })
     }
 
@@ -48,9 +54,19 @@ bot.on('message', (msg) => {
         getAllDEC().then(balance => {
             let message = '';
             balance.forEach(function(item, index) {
-                message += index+1 + ') ' + item.name + ':      ' + item.DEC.toFixed(4) + ' DEC \n';
+                message += index+1 + ') ' + item.name + ':      ' + item.DEC.toFixed(3) + ' DEC \n';
             })
             bot.sendMessage(chatId, message);   
+        })
+    }
+
+    if(msg.text === '/all_balance_credits') {
+        getAllCredit().then(balance => {
+            let message = '';
+            balance.forEach(function(item, index) {
+                message += index+1 + ') ' + item.name + ':      ' + item.CREDITS.toFixed(3) + ' CRED \n';
+            })
+            bot.sendMessage(chatId, message);
         })
     }
 
@@ -83,6 +99,21 @@ async function getSumDEC() {
     return sum;
 }
 
+async function getSumCredit() {
+    let sum = 0;
+
+    for (const url of urlBalanceArr) {
+        let balances = await axios.get(url);
+        balances.data.forEach(function(item) {
+            if(item.token === 'CREDITS') {
+                sum += item.balance;
+            }
+        })
+    }
+
+    return sum;
+}
+
 async function getAllDEC() {
     let balance = [];
 
@@ -102,23 +133,39 @@ async function getAllDEC() {
     return balance;
 }
 
-async function getPlayerCards(playerName) {
+async function getAllCredit() {
+    let balance = [];
+
+    for (const url of urlBalanceArr) {
+        let balances = await axios.get(url);
+        balances.data.forEach(function(item) {
+            if(item.token === 'CREDITS') {
+                user = {
+                    'name': item.player,
+                    'CREDITS': item.balance
+                }
+                balance.push(user)
+            }
+        })
+    }
+
+    return balance;
+}
+
+async function getPlayerCards() {
     let message = '';
     let index = 1;
 
     for (const item of accounts) {
         let playerUrl = urlCard + item.name;
         let cards = await axios.get(playerUrl);
-        let index = 1;
 
         if (cards.data.cards.length) {
-            message += index + ')' + cards.data.player + ': ' 
-                        + cards.data.cards.length +' шт.\n'
+            message += index + ') ' + cards.data.player + ': '
+                        + cards.data.cards.length +' шт.\n   '
 
             cards.data.cards.forEach(function(card) {
-                message += '------------------\n    золотая: ' 
-                + card.gold  + ' \| ' + 'цена: ' 
-                + card.buy_price + '\n------------------\n';
+                message += 'золотая: ' + card.gold + '\n';
             })
 
             index++;
@@ -137,9 +184,11 @@ async function getActiveQuest() {
 
     for (const item of accounts) {
         let playerUrl = urlQuest + item.name;
-        let cards = await axios.get(playerUrl);
+        let quest = await axios.get(playerUrl);
 
-        if(cards.data[0].completed_items < 5)
+
+
+        if(quest.data[0].completed_items < 5)
         {
             message += index 
                         + ')' 
@@ -150,6 +199,10 @@ async function getActiveQuest() {
                         + cards.data[0].total_items + '\n';
             index++;
         }
+    }
+
+    if(message === '') {
+        return 'В данный момент все квесты выполнены!';
     }
 
     return message;

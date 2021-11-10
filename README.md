@@ -8,10 +8,12 @@
 ### 6)заполнить его акк-ми
 ### 7)в телеге найти botFather, там зарегать бота нового, получаете токен
 ### 8) добавить там же данные команды боту:
-  sum_balance - show sum balances  
-  all_balance - show all balances  
+  sum_balance - show sum balances DEC  
+  sum_balance_credits - show sum balances CRED  
+  all_balance - show all balances DEC  
+  all_balance_credits - show all balances CRED  
   cards - show all cards  
-  quest - show active quests  
+  quest - show active quests 
 ### 9)в папке с ботом переименовать файл .env.exemple в .env
 ### 10) в этот файл ввести токен бота который был получен на шаге 7
 ### 11) запустить бота командой:
